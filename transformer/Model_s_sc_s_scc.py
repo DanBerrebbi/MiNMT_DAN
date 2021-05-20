@@ -34,11 +34,11 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
   def type(self):
     return 's_sc_s_scc'
 
-  def score_dan(self, msk_src, msk_xsrc):
+  def score_dan(self, msk_src, msk_xsrc, bs, lt, ed):
     # msk_src is [bs, 1, l1] (False where <pad> True otherwise)
     # msk_xsrc is [bs, 1, l2] (False where <pad> True otherwise)
     alpha = []
-    bs = msk_src.shape[0]
+    #bs = msk_src.shape[0]
     for b in range(bs):
       lg_src, lg_xsrc = 0, 0
       for tok in msk_src[b][0]:
@@ -48,7 +48,7 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
         if tok :
           lg_xsrc+=1.
       score = abs(lg_src-lg_xsrc)/lg_src
-      alpha.append(score)
+      alpha.append([[score for i in range(ed)] for k in range(lt)])
     return torch.Tensor(alpha)
 
 
@@ -57,11 +57,6 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
     #tgt is [bs,lt]
     #msk_src is [bs,1,ls] (False where <pad> True otherwise)
     #mst_tgt is [bs,lt,lt]
-
-    ## variable d'ecartement
-    self.alpha = self.score_dan(msk_src, msk_xsrc)
-    print(150*"££")
-    print(self.alpha.shape)
 
     ### encoder #####
     src = self.add_pos_enc(self.src_emb(src)) #[bs,ls,ed]
@@ -77,9 +72,14 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
     ### decoder #####
     tgt = self.add_pos_enc(self.tgt_emb(tgt)) #[bs,lt,ed]
     z_tgt = self.stacked_decoder.forward(z_src, tgt, msk_src, msk_tgt) #[bs,lt,ed]
-    
+
+    # ajout DAN
+    ## variable d'ecartement
+    bs, lt, ed = z_tgt.shape
+    alpha = self.score_dan(msk_src, msk_xsrc, bs, lt, ed)   # alpha is [bs, lt, ed]
+
     z_tgt_pre = self.multihead_attn_cross_pre(q=z_tgt, k=z_xtgt, v=z_xtgt, msk=msk_xtgt_2)
-    z_tgt = self.layer_norm_2(z_tgt + self.layer_norm_1(z_tgt_pre))
+    z_tgt = self.layer_norm_2(alpha * z_tgt + (1-alpha) * self.layer_norm_1(z_tgt_pre))
     ### generator ###
     y_tgt_trn = self.generator_trn(z_tgt) #[bs, lt, Vt]
     y_pre_trn = self.generator_trn(z_xtgt)

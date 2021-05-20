@@ -49,7 +49,9 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
           lg_xsrc+=1.
       score = abs(lg_src-lg_xsrc)/lg_src
       alpha.append([[score for i in range(ed)] for k in range(lt)])
-    return torch.Tensor(alpha)
+    device = torch.device('cpu')
+    rep = torch.Tensor(alpha).to(device)
+    return rep
 
 
   def forward(self, src, xsrc, xtgt, tgt, msk_src, msk_xsrc, msk_xtgt_1, msk_xtgt_2, msk_tgt): 

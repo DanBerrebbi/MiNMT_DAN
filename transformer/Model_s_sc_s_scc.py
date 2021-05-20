@@ -34,11 +34,34 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
   def type(self):
     return 's_sc_s_scc'
 
+  def score_dan(self, msk_src, msk_xsrc):
+    # msk_src is [bs, 1, l1] (False where <pad> True otherwise)
+    # msk_xsrc is [bs, 1, l2] (False where <pad> True otherwise)
+    alpha = []
+    bs = msk_src.shape[0]
+    for b in range(bs):
+      lg_src, lg_xsrc = 0, 0
+      for tok in msk_src[b][0]:
+        if tok :
+          lg_src+=1.
+      for tok in msk_xsrc[b][0]:
+        if tok :
+          lg_xsrc+=1.
+      score = abs(lg_src-lg_xsrc)/lg_src
+      alpha.append(score)
+    return torch.Tensor(alpha)
+
+
   def forward(self, src, xsrc, xtgt, tgt, msk_src, msk_xsrc, msk_xtgt_1, msk_xtgt_2, msk_tgt): 
     #src is [bs,ls]
     #tgt is [bs,lt]
     #msk_src is [bs,1,ls] (False where <pad> True otherwise)
     #mst_tgt is [bs,lt,lt]
+
+    ## variable d'ecartement
+    self.alpha = self.score_dan(msk_src, msk_xsrc)
+    print(150*"££")
+    print(self.alpha.shape)
 
     ### encoder #####
     src = self.add_pos_enc(self.src_emb(src)) #[bs,ls,ed]

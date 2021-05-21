@@ -7,6 +7,7 @@ import torch
 import math
 import numpy as np
 import glob
+import logging
 from transformer.Model import Embedding, AddPositionalEncoding, Stacked_Encoder, Stacked_Decoder, Encoder, Decoder, Stacked_Encoder_scc, Stacked_Decoder_scc, Encoder_scc, Decoder_scc, MultiHead_Attn, MultiHead_Attn_Relu, FeedForward, Generator
 
 ##############################################################################################################
@@ -104,7 +105,8 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
 
     bs, lt, ed = z_tgt.shape
     alpha = self.score_dan(msk_src, self.msk_xsrc, bs, lt, ed, device=z_tgt.device)   # alpha is [bs, lt, ed]
-
+    logging.info("device alpha :{}, device z_tgt : {}".format(alpha.device, z_tgt.device))
+    assert 6==0
     z_tgt_pre = self.multihead_attn_cross_pre(q=z_tgt, k=z_xtgt, v=z_xtgt, msk=msk_xtgt_2)
     z_tgt = self.layer_norm_2(alpha * z_tgt + (1-alpha) * self.layer_norm_1(z_tgt_pre))
 

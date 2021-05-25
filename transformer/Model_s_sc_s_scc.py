@@ -43,7 +43,7 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
     bs = msk_src.shape[0]   # je fais ca pour debuguer cr probleme avec b, comme si b etait out of bounds
     for b in range(bs):
       lg_src, lg_xsrc = 0, 0
-      assert b!=10
+      assert b!=10, 'lalala {} '.format("lolo")
       for tok in msk_src[b][0]:
         if tok :
           lg_src+=1.

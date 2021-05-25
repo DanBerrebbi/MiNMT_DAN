@@ -40,7 +40,9 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
     # msk_src is [bs, 1, l1] (False where <pad> True otherwise)
     # msk_xsrc is [bs, 1, l2] (False where <pad> True otherwise)
     alpha = []
-    bs = msk_src.shape[0]   # je fais ca pour debuguer cr probleme avec b, comme si b etait out of bounds
+    bs = msk_src.shape[0]
+    K = bs // msk_xsrc.shape[0]
+    msk_xsrc = msk_xsrc.repeat_interleave(repeats=K, dim=0) #bs --> bs*K     necessaire pour l'inference
     for b in range(bs):
       lg_src, lg_xsrc = 0, 0
       assert msk_src.shape[0] == msk_xsrc.shape[0], 'msk_src = {},  msk_xsrc = {} '.format(msk_src.shape, msk_xsrc.shape)

@@ -40,9 +40,10 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
     # msk_src is [bs, 1, l1] (False where <pad> True otherwise)
     # msk_xsrc is [bs, 1, l2] (False where <pad> True otherwise)
     alpha = []
-    bs = msk_src.shape[0]   # je fais capour debugger cr probleme avec b, comme si b etait out of bounds
+    bs = msk_src.shape[0]   # je fais ca pour debuguer cr probleme avec b, comme si b etait out of bounds
     for b in range(bs):
       lg_src, lg_xsrc = 0, 0
+      assert b!=10
       for tok in msk_src[b][0]:
         if tok :
           lg_src+=1.

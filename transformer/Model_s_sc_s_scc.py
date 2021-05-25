@@ -113,8 +113,6 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
     z_tgt_pre = self.multihead_attn_cross_pre(q=z_tgt, k=z_xtgt, v=z_xtgt, msk=msk_xtgt_2)
     z_tgt = self.layer_norm_2(alpha * z_tgt + (1-alpha) * self.layer_norm_1(z_tgt_pre))
 
-    z_tgt_pre = self.multihead_attn_cross_pre(q=z_tgt, k=z_xtgt, v=z_xtgt, msk=msk_xtgt_2)
-    z_tgt = self.layer_norm_2(z_tgt + self.layer_norm_1(z_tgt_pre))
     ### generator ###
     y = self.generator_trn(z_tgt) #[bs, lt, Vt]
     y = torch.nn.functional.log_softmax(y, dim=-1) 

@@ -24,8 +24,8 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
     self.layer_norm_1 = torch.nn.LayerNorm(emb_dim, eps=1e-6)
     self.layer_norm_2 = torch.nn.LayerNorm(emb_dim, eps=1e-6)
 
-    self.multihead_attn_cross_pre = MultiHead_Attn_Relu(n_heads, emb_dim, qk_dim, v_dim, dropout)
-    #self.multihead_attn_cross_pre = MultiHead_Attn(n_heads, emb_dim, qk_dim, v_dim, dropout)    # DAN
+    #self.multihead_attn_cross_pre = MultiHead_Attn_Relu(n_heads, emb_dim, qk_dim, v_dim, dropout)
+    self.multihead_attn_cross_pre = MultiHead_Attn(n_heads, emb_dim, qk_dim, v_dim, dropout)    # DAN
 
     self.add_pos_enc = AddPositionalEncoding(emb_dim, dropout, max_len=5000) 
     self.stacked_encoder = Stacked_Encoder(n_layers, ff_dim, n_heads, emb_dim, qk_dim, v_dim, dropout)         ### encoder for src and xsrc
@@ -45,7 +45,7 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
     msk_xsrc = msk_xsrc.repeat_interleave(repeats=K, dim=0) #bs --> bs*K     necessaire pour l'inference
     for b in range(bs):
       lg_src, lg_xsrc = 0, 0
-      assert msk_src.shape[0] == msk_xsrc.shape[0], 'msk_src = {},  msk_xsrc = {} '.format(msk_src.shape, msk_xsrc.shape)
+      assert msk_src.shape[0] == msk_xsrc.shape[0], 'msk_src = {},  msk_xsrc = {} '.format(msk_src.shape, msk_xsrc.shape)  # debug inference
       for tok in msk_src[b][0]:
         if tok :
           lg_src+=1.

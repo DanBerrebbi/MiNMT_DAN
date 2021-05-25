@@ -113,9 +113,9 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
     ## variable d'ecartement
     bs, lt, ed = z_tgt.shape
     alpha = self.score_dan(msk_src, msk_xsrc)   # alpha is [bs, lt, ed]
-
+    beta = [1 - e for e in alpha]
     z_tgt_pre = self.multihead_attn_cross_pre(q=z_tgt, k=z_xtgt, v=z_xtgt, msk=msk_xtgt_2)
-    z_tgt = self.layer_norm_2(self.mul_vec(alpha, z_tgt) + self.mul_vec((1-alpha),self.layer_norm_1(z_tgt_pre)))
+    z_tgt = self.layer_norm_2(self.mul_vec(alpha, z_tgt) + self.mul_vec(beta,self.layer_norm_1(z_tgt_pre)))
     ### generator ###
     y_tgt_trn = self.generator_trn(z_tgt) #[bs, lt, Vt]
     y_pre_trn = self.generator_trn(z_xtgt)
@@ -143,7 +143,8 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
     #logging.info("alpha :{}".format(alpha[:,0,0]))  # a aller chercher dans alpha
     #logging.info("device alpha :{}, device z_tgt : {}".format(alpha.device, z_tgt.device))
     z_tgt_pre = self.multihead_attn_cross_pre(q=z_tgt, k=z_xtgt, v=z_xtgt, msk=msk_xtgt_2)
-    z_tgt = self.layer_norm_2(self.mul_vec(alpha, z_tgt) + self.mul_vec((1-alpha),self.layer_norm_1(z_tgt_pre)))
+    beta = [1-e for e in alpha]
+    z_tgt = self.layer_norm_2(self.mul_vec(alpha, z_tgt) + self.mul_vec(beta,self.layer_norm_1(z_tgt_pre)))
 
     ### generator ###
     y = self.generator_trn(z_tgt) #[bs, lt, Vt]

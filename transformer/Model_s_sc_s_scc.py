@@ -81,6 +81,13 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
       alpha.append(score_norm)
     return alpha
 
+  def mul_vec(self, vec, tenseur):
+    i = 0
+    for ligne in tenseur:
+      ligne *= vec[i]
+      i += 1
+    return tenseur
+
   def forward(self, src, xsrc, xtgt, tgt, msk_src, msk_xsrc, msk_xtgt_1, msk_xtgt_2, msk_tgt):
     #src is [bs,ls]
     #tgt is [bs,lt]
@@ -108,7 +115,7 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
     alpha = self.score_dan(msk_src, msk_xsrc)   # alpha is [bs, lt, ed]
 
     z_tgt_pre = self.multihead_attn_cross_pre(q=z_tgt, k=z_xtgt, v=z_xtgt, msk=msk_xtgt_2)
-    z_tgt = self.layer_norm_2(alpha * z_tgt + (1-alpha) * self.layer_norm_1(z_tgt_pre))
+    z_tgt = self.layer_norm_2(self.mul_vec(alpha, z_tgt) + self.mul_vec((1-alpha),self.layer_norm_1(z_tgt_pre)))
     ### generator ###
     y_tgt_trn = self.generator_trn(z_tgt) #[bs, lt, Vt]
     y_pre_trn = self.generator_trn(z_xtgt)
@@ -136,7 +143,7 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
     #logging.info("alpha :{}".format(alpha[:,0,0]))  # a aller chercher dans alpha
     #logging.info("device alpha :{}, device z_tgt : {}".format(alpha.device, z_tgt.device))
     z_tgt_pre = self.multihead_attn_cross_pre(q=z_tgt, k=z_xtgt, v=z_xtgt, msk=msk_xtgt_2)
-    z_tgt = self.layer_norm_2(alpha * z_tgt + (1-alpha) * self.layer_norm_1(z_tgt_pre))
+    z_tgt = self.layer_norm_2(self.mul_vec(alpha, z_tgt) + self.mul_vec((1-alpha),self.layer_norm_1(z_tgt_pre)))
 
     ### generator ###
     y = self.generator_trn(z_tgt) #[bs, lt, Vt]

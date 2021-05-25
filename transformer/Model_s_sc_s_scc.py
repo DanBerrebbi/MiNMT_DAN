@@ -36,7 +36,7 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
   def type(self):
     return 's_sc_s_scc'
 
-  def score_dan(self, msk_src, msk_xsrc, bs, lt, ed, device):
+  """  def score_dan(self, msk_src, msk_xsrc, bs, lt, ed, device):
     # msk_src is [bs, 1, l1] (False where <pad> True otherwise)
     # msk_xsrc is [bs, 1, l2] (False where <pad> True otherwise)
     alpha = []
@@ -53,12 +53,35 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
         if tok :
           lg_xsrc+=1.
       score = abs(lg_src-lg_xsrc)/max(lg_src, lg_xsrc)
-      score_norm = max(score, .4)
+      score_norm = max(score, .5)
       alpha.append([[score_norm for i in range(ed)] for k in range(lt)])
     return torch.tensor(alpha, device= device)
+  """
 
 
-  def forward(self, src, xsrc, xtgt, tgt, msk_src, msk_xsrc, msk_xtgt_1, msk_xtgt_2, msk_tgt): 
+  def score_dan(self, msk_src, msk_xsrc):
+    # msk_src is [bs, 1, l1] (False where <pad> True otherwise)
+    # msk_xsrc is [bs, 1, l2] (False where <pad> True otherwise)
+    alpha = []
+    bs = msk_src.shape[0]
+    K = bs // msk_xsrc.shape[0]
+    msk_xsrc = msk_xsrc.repeat_interleave(repeats=K, dim=0)  # bs --> bs*K     necessaire pour l'inference
+    for b in range(bs):
+      lg_src, lg_xsrc = 0, 0
+      assert msk_src.shape[0] == msk_xsrc.shape[0], 'msk_src = {},  msk_xsrc = {} '.format(msk_src.shape,
+                                                                                           msk_xsrc.shape)  # debug inference
+      for tok in msk_src[b][0]:
+        if tok:
+          lg_src += 1.
+      for tok in msk_xsrc[b][0]:
+        if tok:
+          lg_xsrc += 1.
+      score = abs(lg_src - lg_xsrc) / max(lg_src, lg_xsrc)
+      score_norm = max(score, .5)
+      alpha.append(score_norm)
+    return alpha
+
+  def forward(self, src, xsrc, xtgt, tgt, msk_src, msk_xsrc, msk_xtgt_1, msk_xtgt_2, msk_tgt):
     #src is [bs,ls]
     #tgt is [bs,lt]
     #msk_src is [bs,1,ls] (False where <pad> True otherwise)
@@ -82,7 +105,7 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
     # ajout DAN
     ## variable d'ecartement
     bs, lt, ed = z_tgt.shape
-    alpha = self.score_dan(msk_src, msk_xsrc, bs, lt, ed, device=z_tgt.device)   # alpha is [bs, lt, ed]
+    alpha = self.score_dan(msk_src, msk_xsrc)   # alpha is [bs, lt, ed]
 
     z_tgt_pre = self.multihead_attn_cross_pre(q=z_tgt, k=z_xtgt, v=z_xtgt, msk=msk_xtgt_2)
     z_tgt = self.layer_norm_2(alpha * z_tgt + (1-alpha) * self.layer_norm_1(z_tgt_pre))
@@ -108,9 +131,9 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
     tgt = self.add_pos_enc(self.tgt_emb(tgt)) #[bs,lt,ed]
     z_tgt =  self.stacked_decoder.forward(z_src, tgt, msk_src, msk_tgt) #[bs,lt,ed]
 
-    bs, lt, ed = z_tgt.shape
-    alpha = self.score_dan(msk_src, self.msk_xsrc, bs, lt, ed, device=z_tgt.device)   # alpha is [bs, lt, ed]
-    logging.info("alpha :{}".format(alpha[:,0,0]))  # a aller chercher dans alpha
+    #bs, lt, ed = z_tgt.shape
+    alpha = self.score_dan(msk_src, self.msk_xsrc)   # alpha is [bs, lt, ed]
+    #logging.info("alpha :{}".format(alpha[:,0,0]))  # a aller chercher dans alpha
     #logging.info("device alpha :{}, device z_tgt : {}".format(alpha.device, z_tgt.device))
     z_tgt_pre = self.multihead_attn_cross_pre(q=z_tgt, k=z_xtgt, v=z_xtgt, msk=msk_xtgt_2)
     z_tgt = self.layer_norm_2(alpha * z_tgt + (1-alpha) * self.layer_norm_1(z_tgt_pre))

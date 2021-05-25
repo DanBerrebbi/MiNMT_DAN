@@ -52,8 +52,9 @@ class Encoder_Decoder_s_sc_s_scc(torch.nn.Module):
       for tok in msk_xsrc[b][0]:
         if tok :
           lg_xsrc+=1.
-      score = abs(lg_src-lg_xsrc)/lg_src
-      alpha.append([[score for i in range(ed)] for k in range(lt)])
+      score = abs(lg_src-lg_xsrc)/max(lg_src, lg_xsrc)
+      score_norm = max(score, .4)
+      alpha.append([[score_norm for i in range(ed)] for k in range(lt)])
     return torch.tensor(alpha, device= device)
 
 
